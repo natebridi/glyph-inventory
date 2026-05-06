@@ -12,7 +12,7 @@ function Logo() {
         key={i}
         aria-hidden="true"
         style={{ marginTop: `${i * LOGO_STEP}px` }}
-        className="inline-flex items-center justify-center w-6 h-6 text-sm font-semibold border border-gray-200 rounded-[2px] uppercase text-gray-600 bg-white leading-none select-none"
+        className="inline-flex items-center justify-center w-6 h-6 text-sm font-semibold rounded-[2px] uppercase text-gray-600 bg-white leading-none select-none"
       >
         {char}
       </span>
@@ -21,10 +21,10 @@ function Logo() {
 
   return (
     <h1 aria-label="Glyph Inventory" className="leading-none mb-4">
-      <span className="flex gap-px items-start" aria-hidden="true">
+      <span className="flex gap-1 items-start" aria-hidden="true">
         {renderWord('glyph')}
       </span>
-      <span className="flex gap-px items-start mt-1 ml-[25px]" aria-hidden="true">
+      <span className="flex gap-1 items-start mt-1 ml-[25px]" aria-hidden="true">
         {renderWord('inventory')}
       </span>
     </h1>
@@ -60,14 +60,22 @@ export default function FontList({ selected, onSelect }) {
           className="pointer-events-none absolute inset-0"
           style={{
             zIndex: -1,
-            backgroundImage: 'radial-gradient(circle, #efefef 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(circle, rgba(255,255,255) 1px, transparent 1px)',
             backgroundSize: '6px 6px',
             backgroundAttachment: 'fixed',
-            maskImage: 'linear-gradient(to bottom, black 0%, transparent 40vh)',
-            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 40vh)',
+            maskImage: 'linear-gradient(to bottom, black 0%, transparent 50vh)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 50vh)',
           }}
-        />
-      <div className="px-4 pt-5 pb-3 border-b border-gray-100 shrink-0">
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          zIndex: -2,
+          background: 'linear-gradient(to bottom, #e4efe9, transparent 40vh)',
+        }}
+      />
+      <div className="px-4 pt-5 pb-3 border-b border-gray-200 shrink-0">
         <Logo />
 
         <input
@@ -86,7 +94,7 @@ export default function FontList({ selected, onSelect }) {
               className={`px-2 py-0.5 text-xs rounded-full border transition-colors capitalize
                 ${category === cat
                   ? 'bg-gray-900 text-white border-gray-900'
-                  : 'text-gray-500 border-gray-200 hover:border-gray-400'
+                  : 'text-gray-500 bg-white border-gray-200 hover:border-gray-400'
                 }`}
             >
               {cat}

@@ -126,18 +126,44 @@ export default function GlyphGrid({ fontItem }) {
         className="pointer-events-none absolute inset-0"
         style={{
           zIndex: -1,
-          backgroundImage: 'radial-gradient(circle, #efefef 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255) 1px, transparent 1px)',
           backgroundSize: '6px 6px',
           backgroundAttachment: 'fixed',
-          maskImage: 'linear-gradient(to top, black 0%, transparent 60vh)',
-          WebkitMaskImage: 'linear-gradient(to top, black 0%, transparent 60vh)',
+          maskImage: 'linear-gradient(to top, black 0%, transparent 40vh)',
+          WebkitMaskImage: 'linear-gradient(to top, black 0%, transparent 40vh)',
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          zIndex: -2,
+          background: 'linear-gradient(to top, #e5efea, transparent 60vh)',
         }}
       />
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">{fontItem.family}</h2>
           <p className="text-xs text-gray-400 mt-0.5">
-            {loading ? 'Loading…' : `${glyphs.length.toLocaleString()} glyphs`}
+            {loading ? 'Loading…' : (
+              <>
+                {glyphs.length.toLocaleString()} glyphs
+                {' · '}
+                <a
+                  href={`https://fonts.google.com/specimen/${fontItem.family.replace(/ /g, '+')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline text-emerald-600 hover:text-gray-800 transition-colors"
+                >
+                  Google Fonts
+                  <span className="inline-flex ml-1 relative top-px">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12px" viewBox="0 0 512 512">
+                      <path d="M299 107L299 64L448 64L448 213L405 213L405 137L196 346L166 316L375 107L299 107M107 405L405 405L405 256L448 256L448 405Q448 422 435 435Q422 448 405 448L107 448Q89 448 76.50 435.50Q64 423 64 405L64 107Q64 89 76.50 76.50Q89 64 107 64L256 64L256 107L107 107" fill="currentColor" />
+                    </svg>
+                  </span>
+                </a>
+              </>
+            )}
           </p>
         </div>
         <VariantControls
