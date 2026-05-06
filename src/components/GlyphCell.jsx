@@ -45,7 +45,7 @@ const GlyphCell = memo(function GlyphCell({ glyph, fontFamily, font, onClick, is
       className={`flex flex-col items-center justify-between p-2 border rounded-md transition-colors min-w-0 w-full text-left
         ${isSelected
           ? 'bg-gray-900 border-gray-900'
-          : 'border-gray-100 hover:bg-gray-50 hover:border-gray-300'
+          : 'border-gray-100 bg-white hover:bg-gray-50 hover:border-gray-300'
         }`}
     >
       <div className="flex flex-1 items-center justify-center w-full">

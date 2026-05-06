@@ -120,7 +120,19 @@ export default function GlyphGrid({ fontItem }) {
   })
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="relative isolate flex flex-col h-full">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          zIndex: -1,
+          backgroundImage: 'radial-gradient(circle, #efefef 1px, transparent 1px)',
+          backgroundSize: '6px 6px',
+          backgroundAttachment: 'fixed',
+          maskImage: 'linear-gradient(to top, black 0%, transparent 60vh)',
+          WebkitMaskImage: 'linear-gradient(to top, black 0%, transparent 60vh)',
+        }}
+      />
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">{fontItem.family}</h2>

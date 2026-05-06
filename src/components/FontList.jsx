@@ -54,7 +54,19 @@ export default function FontList({ selected, onSelect }) {
   })
 
   return (
-    <aside className="w-72 flex flex-col border-r border-gray-100 shrink-0 h-full">
+    <aside className="relative isolate w-72 flex flex-col border-r border-gray-100 shrink-0 h-full">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            zIndex: -1,
+            backgroundImage: 'radial-gradient(circle, #efefef 1px, transparent 1px)',
+            backgroundSize: '6px 6px',
+            backgroundAttachment: 'fixed',
+            maskImage: 'linear-gradient(to bottom, black 0%, transparent 40vh)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 40vh)',
+          }}
+        />
       <div className="px-4 pt-5 pb-3 border-b border-gray-100 shrink-0">
         <Logo />
 
