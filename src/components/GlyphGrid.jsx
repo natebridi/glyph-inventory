@@ -1,8 +1,10 @@
 import { useRef, useState, useEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useFont } from '../hooks/useFont'
+import { useGlyphFilter } from '../hooks/useGlyphFilter'
 import GlyphCell from './GlyphCell'
 import GlyphDetail from './GlyphDetail'
+import GlyphFilter from './GlyphFilter'
 
 const CELL_SIZE = 88
 const GAP = 6
@@ -69,6 +71,9 @@ export default function GlyphGrid({ fontItem }) {
 
   const { glyphs, fontFamily, parsedFont, loading, error } = useFont(fontItem, resolvedVariant)
 
+  const resetKey = `${fontItem.family}/${resolvedVariant}`
+  const filter = useGlyphFilter(glyphs, resetKey)
+
   const containerRef = useRef(null)
   const [containerWidth, setContainerWidth] = useState(800)
 
@@ -108,8 +113,8 @@ export default function GlyphGrid({ fontItem }) {
   const columnCount = Math.max(1, Math.floor((effectiveWidth + GAP) / (CELL_SIZE + GAP)))
 
   const rows = []
-  for (let i = 0; i < glyphs.length; i += columnCount) {
-    rows.push(glyphs.slice(i, i + columnCount))
+  for (let i = 0; i < filter.filteredGlyphs.length; i += columnCount) {
+    rows.push(filter.filteredGlyphs.slice(i, i + columnCount))
   }
 
   const rowVirtualizer = useVirtualizer({
@@ -147,7 +152,10 @@ export default function GlyphGrid({ fontItem }) {
           <p className="text-xs text-gray-400 mt-0.5">
             {loading ? 'Loading…' : (
               <>
-                {glyphs.length.toLocaleString()} glyphs
+                {filter.isFiltered
+                  ? `${filter.filteredGlyphs.length.toLocaleString()} / ${glyphs.length.toLocaleString()} glyphs`
+                  : `${glyphs.length.toLocaleString()} glyphs`
+                }
                 {' · '}
                 <a
                   href={`https://fonts.google.com/specimen/${fontItem.family.replace(/ /g, '+')}`}
@@ -176,6 +184,23 @@ export default function GlyphGrid({ fontItem }) {
         />
       </div>
 
+      {!loading && !error && glyphs.length > 0 && (
+        <GlyphFilter
+          search={filter.search}
+          onSearchChange={filter.setSearch}
+          activeBlocks={filter.activeBlocks}
+          onBlockToggle={filter.toggleBlock}
+          hideEmpty={filter.hideEmpty}
+          onHideEmptyChange={filter.setHideEmpty}
+          unicodeOnly={filter.unicodeOnly}
+          onUnicodeOnlyChange={filter.setUnicodeOnly}
+          availableBlocks={filter.availableBlocks}
+          filteredCount={filter.filteredGlyphs.length}
+          totalCount={glyphs.length}
+          isFiltered={filter.isFiltered}
+        />
+      )}
+
       {error && (
         <div className="m-6 p-4 bg-red-50 text-red-700 text-sm rounded-md">{error}</div>
       )}
@@ -186,7 +211,13 @@ export default function GlyphGrid({ fontItem }) {
         </div>
       )}
 
-      {!loading && !error && glyphs.length > 0 && (
+      {!loading && !error && glyphs.length > 0 && filter.filteredGlyphs.length === 0 && (
+        <div className="flex flex-1 items-center justify-center text-gray-400 text-sm">
+          No glyphs match these filters
+        </div>
+      )}
+
+      {!loading && !error && filter.filteredGlyphs.length > 0 && (
         <div className="flex-1 overflow-hidden relative">
           <div ref={containerRef} className="h-full overflow-auto p-6">
             <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
