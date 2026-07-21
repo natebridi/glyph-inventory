@@ -47,9 +47,9 @@ export default function FontList({ selected, onSelect }) {
 
       {/* Borderless search: with no box to outline, focus is signalled by the band
           tinting to `surface` and the magnifier inking up. */}
-      <div className="flex items-center gap-[11px] px-4 py-5 shrink-0 transition-colors focus-within:bg-surface">
+      <div className={`flex items-center gap-[11px] mb-4 px-4 py-5 shrink-0 transition-colors focus-within:bg-accent focus-within:text-content-inverted ${query ? 'focus-within:text-content-inverted' : 'text-content'}`}>
         <svg
-          className={`shrink-0 transition-colors ${query ? 'text-content' : 'text-content-muted'}`}
+          className={`shrink-0 transition-colors`}
           xmlns="http://www.w3.org/2000/svg"
           width="19"
           height="19"
@@ -68,13 +68,13 @@ export default function FontList({ selected, onSelect }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Escape' && setQuery('')}
-          className="flex-1 min-w-0 bg-transparent outline-none text-xl tracking-[-0.02em] text-content caret-accent placeholder:text-content-muted"
+          className={`flex-1 min-w-0 bg-transparent outline-none text-xl  caret-accent placeholder:text-content-muted ${query ? 'text-content focus:text-content-inverted' : 'text-content-inverted'} `}
         />
         {query && (
           <button
             onClick={() => setQuery('')}
             aria-label="Clear search"
-            className="shrink-0 flex items-center justify-center w-6 h-6 -mr-1 rounded-full text-content-muted transition-colors hover:bg-border hover:text-content"
+            className={`shrink-0 flex items-center justify-center w-6 h-6 -mr-1 rounded-full transition-colors hover:bg-background hover:text-content`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
