@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.24",
+    "agentation": "^3.0.2",
     "opentype.js": "^1.3.5",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"

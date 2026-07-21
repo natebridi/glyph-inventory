@@ -16,7 +16,7 @@ function GlyphSvg({ glyph, font }) {
   const hasPath = pathData && pathData.length > 1
 
   if (!hasPath) {
-    return <span className="text-gray-300 text-lg select-none">∅</span>
+    return <span className="text-content-muted text-lg select-none">∅</span>
   }
 
   return (
@@ -40,29 +40,28 @@ const GlyphCell = memo(function GlyphCell({ glyph, fontFamily, font, onClick, is
     : glyph.name ?? `#${glyph.index}`
 
   return (
+    // Cells carry only their right and bottom rule; the grid wrapper closes the
+    // top and left edges, so shared lines never double up.
     <button
       onClick={onClick}
-      className={`flex flex-col items-center justify-between p-2 border rounded-md transition-colors min-w-0 w-full text-left
-        ${isSelected
-          ? 'bg-gray-900 border-gray-900'
-          : 'border-gray-100 bg-white hover:bg-gray-50 hover:border-gray-300'
-        }`}
+      className={`flex flex-col items-center justify-between p-2 border-r border-b border-border transition-colors min-w-0 w-full h-full text-left
+        ${isSelected ? 'bg-accent' : 'hover:bg-surface'}`}
     >
       <div className="flex flex-1 items-center justify-center w-full">
         {isPrintable ? (
           <span
             style={{ fontFamily: `'${fontFamily}'`, fontSize: DISPLAY_SIZE, lineHeight: 1 }}
-            className={`select-none ${isSelected ? 'text-white' : ''}`}
+            className={`select-none ${isSelected ? 'text-on-accent' : ''}`}
           >
             {String.fromCodePoint(glyph.unicode)}
           </span>
         ) : (
-          <span className={isSelected ? 'text-white' : ''}>
+          <span className={isSelected ? 'text-on-accent' : ''}>
             <GlyphSvg glyph={glyph.glyph} font={font} />
           </span>
         )}
       </div>
-      <span className={`text-[10px] font-mono mt-1 truncate max-w-full ${isSelected ? 'text-gray-400' : 'text-gray-400'}`}>
+      <span className={`text-[10px] font-mono mt-1 truncate max-w-full ${isSelected ? 'text-on-accent/70' : 'text-content-muted'}`}>
         {label}
       </span>
     </button>
