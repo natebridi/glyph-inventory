@@ -16,7 +16,7 @@ function GlyphSvg({ glyph, font }) {
   const hasPath = pathData && pathData.length > 1
 
   if (!hasPath) {
-    return <span className="text-gray-300 text-lg select-none">∅</span>
+    return <span className="text-content-muted text-lg select-none">∅</span>
   }
 
   return (
@@ -40,31 +40,51 @@ const GlyphCell = memo(function GlyphCell({ glyph, fontFamily, font, onClick, is
     : glyph.name ?? `#${glyph.index}`
 
   return (
+    // Cells carry only their right and bottom rule; the grid wrapper closes the
+    // top and left edges, so shared lines never double up.
+    // While expanded the cell becomes the close control — a large ✕ replaces the
+    // character outright, so there is one obvious way to collapse the row.
     <button
       onClick={onClick}
-      className={`flex flex-col items-center justify-between p-2 border rounded-md transition-colors min-w-0 w-full text-left
-        ${isSelected
-          ? 'bg-gray-900 border-gray-900'
-          : 'border-gray-100 bg-white hover:bg-gray-50 hover:border-gray-300'
-        }`}
+      aria-label={isSelected ? `Close ${label} details` : undefined}
+      className={`flex flex-col items-center justify-between p-2 border-r border-b border-border transition-colors min-w-0 w-full h-full text-left
+        ${isSelected ? 'bg-accent' : 'hover:bg-surface'}`}
     >
-      <div className="flex flex-1 items-center justify-center w-full">
-        {isPrintable ? (
-          <span
-            style={{ fontFamily: `'${fontFamily}'`, fontSize: DISPLAY_SIZE, lineHeight: 1 }}
-            className={`select-none ${isSelected ? 'text-white' : ''}`}
+      {isSelected ? (
+        <span className="flex flex-1 items-center justify-center w-full text-on-accent/80 hover:text-on-accent transition-colors">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="38"
+            height="38"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
           >
-            {String.fromCodePoint(glyph.unicode)}
+            <line x1="5" y1="5" x2="19" y2="19" />
+            <line x1="19" y1="5" x2="5" y2="19" />
+          </svg>
+        </span>
+      ) : (
+        <>
+          <div className="flex flex-1 items-center justify-center w-full">
+            {isPrintable ? (
+              <span
+                style={{ fontFamily: `'${fontFamily}'`, fontSize: DISPLAY_SIZE, lineHeight: 1 }}
+                className="select-none"
+              >
+                {String.fromCodePoint(glyph.unicode)}
+              </span>
+            ) : (
+              <GlyphSvg glyph={glyph.glyph} font={font} />
+            )}
+          </div>
+          <span className="text-[10px] font-mono mt-1 truncate max-w-full text-content-muted">
+            {label}
           </span>
-        ) : (
-          <span className={isSelected ? 'text-white' : ''}>
-            <GlyphSvg glyph={glyph.glyph} font={font} />
-          </span>
-        )}
-      </div>
-      <span className={`text-[10px] font-mono mt-1 truncate max-w-full ${isSelected ? 'text-gray-400' : 'text-gray-400'}`}>
-        {label}
-      </span>
+        </>
+      )}
     </button>
   )
 })

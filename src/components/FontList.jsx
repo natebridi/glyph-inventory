@@ -1,35 +1,17 @@
 import { useState, useRef, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useFontList } from '../hooks/useFontList'
+import CategoryIcon from './CategoryIcon'
 
-const CATEGORIES = ['all', 'sans-serif', 'serif', 'display', 'handwriting', 'monospace']
-const LOGO_STEP = 3
-
-function Logo() {
-  function renderWord(word) {
-    return word.split('').map((char, i) => (
-      <span
-        key={i}
-        aria-hidden="true"
-        style={{ marginTop: `${i * LOGO_STEP}px` }}
-        className="inline-flex items-center justify-center w-6 h-6 text-sm font-semibold rounded-[2px] uppercase text-gray-600 bg-white leading-none select-none"
-      >
-        {char}
-      </span>
-    ))
-  }
-
-  return (
-    <h1 aria-label="Glyph Inventory" className="leading-none mb-4">
-      <span className="flex gap-1 items-start" aria-hidden="true">
-        {renderWord('glyph')}
-      </span>
-      <span className="flex gap-1 items-start mt-1 ml-[25px]" aria-hidden="true">
-        {renderWord('inventory')}
-      </span>
-    </h1>
-  )
-}
+// Short labels keep the three-column filter grid on one line each.
+const CATEGORIES = [
+  { value: 'all', label: 'All' },
+  { value: 'sans-serif', label: 'Sans' },
+  { value: 'serif', label: 'Serif' },
+  { value: 'display', label: 'Display' },
+  { value: 'handwriting', label: 'Script' },
+  { value: 'monospace', label: 'Mono' },
+]
 
 export default function FontList({ selected, onSelect }) {
   const { fonts, loading, error } = useFontList()
@@ -44,72 +26,98 @@ export default function FontList({ selected, onSelect }) {
     })
   }, [fonts, query, category])
 
+  const isFiltered = query !== '' || category !== 'all'
+
   const listRef = useRef(null)
 
   const rowVirtualizer = useVirtualizer({
     count: filtered.length,
     getScrollElement: () => listRef.current,
-    estimateSize: () => 58,
+    estimateSize: () => 45,
     overscan: 10,
   })
 
   return (
-    <aside className="relative isolate w-72 flex flex-col border-r border-gray-100 shrink-0 h-full">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            zIndex: -1,
-            backgroundImage: 'radial-gradient(circle, rgba(255,255,255) 1px, transparent 1px)',
-            backgroundSize: '6px 6px',
-            backgroundAttachment: 'fixed',
-            maskImage: 'linear-gradient(to bottom, black 0%, transparent 50vh)',
-            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 50vh)',
-          }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
-        style={{
-          zIndex: -2,
-          background: 'linear-gradient(to bottom, #e4efe9, transparent 40vh)',
-        }}
-      />
-      <div className="px-4 pt-5 pb-3 border-b border-gray-200 shrink-0">
-        <Logo />
+    <aside className="w-72 flex flex-col shrink-0 h-full border-r border-border">
+      <div className="flex items-center h-[38px] px-4 border-b border-border shrink-0">
+        <h1 className="font-mono text-[11px] font-medium tracking-[0.13em] text-content">
+          GLYPH INVENTORY
+        </h1>
+      </div>
 
+      {/* Borderless search: with no box to outline, focus is signalled by the band
+          tinting to `surface` and the magnifier inking up. */}
+      <div className={`flex items-center gap-[11px] mb-4 px-4 py-5 shrink-0 transition-colors focus-within:bg-accent focus-within:text-content-inverted ${query ? 'focus-within:text-content-inverted' : 'text-content'}`}>
+        <svg
+          className={`shrink-0 transition-colors`}
+          xmlns="http://www.w3.org/2000/svg"
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <line x1="16.5" y1="16.5" x2="21" y2="21" />
+        </svg>
         <input
-          type="search"
-          placeholder="Search typefaces…"
+          type="text"
+          placeholder="Search typefaces"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white"
+          onKeyDown={(e) => e.key === 'Escape' && setQuery('')}
+          className={`flex-1 min-w-0 bg-transparent outline-none text-xl  caret-accent placeholder:text-content-muted ${query ? 'text-content focus:text-content-inverted' : 'text-content-inverted'} `}
         />
+        {query && (
+          <button
+            onClick={() => setQuery('')}
+            aria-label="Clear search"
+            className={`shrink-0 flex items-center justify-center w-6 h-6 -mr-1 rounded-full transition-colors hover:bg-background hover:text-content`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
+            </svg>
+          </button>
+        )}
+      </div>
 
-        <div className="flex flex-wrap gap-1 mt-2">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={`px-2 py-0.5 text-xs rounded-full border transition-colors capitalize
-                ${category === cat
-                  ? 'bg-gray-900 text-white border-gray-900'
-                  : 'text-gray-500 bg-white border-gray-200 hover:border-gray-400'
-                }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+      {/* Fixed-width slots rather than free wrap, so the six marks form two clean lanes. */}
+      <div className="flex flex-wrap gap-x-4 gap-y-2.5 px-4 pb-4 border-b border-border shrink-0">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.value}
+            onClick={() => setCategory(cat.value)}
+            className={`flex items-center gap-1.5 w-[74px] pb-[5px] border-b-2 transition-colors
+              ${category === cat.value
+                ? 'border-accent text-content font-semibold'
+                : 'border-transparent text-content-secondary hover:text-content'
+              }`}
+          >
+            <CategoryIcon category={cat.value} size={14} className="shrink-0" />
+            <span className="text-[12.5px] leading-[15px]">{cat.label}</span>
+          </button>
+        ))}
       </div>
 
       {error && (
-        <div className="m-4 p-3 bg-red-50 text-red-700 text-xs rounded-md">{error}</div>
+        <div className="m-4 p-3 bg-danger/10 text-danger text-xs rounded-md">{error}</div>
       )}
 
       {loading && (
-        <div className="flex flex-1 items-center justify-center text-gray-400 text-sm">
+        <div className="flex flex-1 items-center justify-center text-content-muted text-sm">
           Loading fonts…
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div className="flex justify-end px-4 pt-3 pb-1.5 shrink-0">
+          <span className="font-mono text-[11px] tracking-[0.06em] text-content-muted tabular-nums">
+            {isFiltered
+              ? `${filtered.length.toLocaleString()} of ${fonts.length.toLocaleString()}`
+              : fonts.length.toLocaleString()}
+          </span>
         </div>
       )}
 
@@ -133,13 +141,18 @@ export default function FontList({ selected, onSelect }) {
                     onClick={() => onSelect(font)}
                     className={`w-full text-left px-4 py-2.5 transition-colors
                       ${isSelected
-                        ? 'bg-gray-900 text-white'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-accent text-on-accent'
+                        : 'text-content-secondary hover:bg-surface-hover'
                       }`}
                   >
-                    <div className="text-sm font-medium truncate">{font.family}</div>
-                    <div className={`text-xs mt-0.5 capitalize ${isSelected ? 'text-gray-300' : 'text-gray-400'}`}>
-                      {font.category} · {font.variants.length} variant{font.variants.length !== 1 ? 's' : ''}
+                    <div className="flex items-center gap-2">
+                      <CategoryIcon
+                        category={font.category}
+                        size={18}
+                        title={font.category}
+                        className="shrink-0 bg-surface text-content-secondary rounded-md"
+                      />
+                      <span className="flex-1 text-sm font-medium truncate">{font.family}</span>
                     </div>
                   </button>
                 </div>
@@ -150,7 +163,7 @@ export default function FontList({ selected, onSelect }) {
       )}
 
       {!loading && !error && filtered.length === 0 && (
-        <div className="flex flex-1 items-center justify-center text-gray-400 text-sm">
+        <div className="flex flex-1 items-center justify-center text-content-muted text-sm">
           No typefaces found
         </div>
       )}

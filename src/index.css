@@ -1,5 +1,78 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   COLOR SCHEME
+   ----------------------------------------------------------------------------
+   This is the single place to configure every color in the app (Tailwind v4
+   configures colors in CSS via @theme, not tailwind.config.js).
+
+   Two layers:
+   1. PALETTE  — raw neutral ramp (taupe-50 … 950). Tune the ramp here.
+   2. SEMANTIC — role-based tokens (text, background, border, accent, …) that
+                 point at the palette. Edit the value to any color you like —
+                 a palette step, a hex, oklch(), etc.
+
+   Every token below generates the matching utilities, e.g.
+     --color-background       -> bg-background
+     --color-content          -> text-content
+     --color-border           -> border-border
+     --color-accent           -> bg-accent / text-accent / border-accent
+   ============================================================================ */
+
+/* --- 1. PALETTE : blue ramp -----------------------------------------------
+   Raw scale, kept in :root under its own names rather than inside @theme so
+   the fractional steps (0.5, 1.5) don't become Tailwind utilities. Semantic
+   tokens below point at these. */
+:root {
+  --blue-0:   oklch(98.0% 0.009 264.0);
+  --blue-0\.5: oklch(93.6% 0.01 264.0);
+  --blue-1:   oklch(89.3% 0.1 264.0);
+  --blue-1\.5: oklch(84.9% 0.032 264.0);
+  --blue-2:   oklch(80.6% 0.036 264.0);
+  --blue-3:   oklch(71.9% 0.047 264.0);
+  --blue-4:   oklch(73.2% 0.15 264.0);
+  --blue-5:   oklch(54.5% 0.093 264.0);
+  --blue-6:   oklch(45.8% 0.136 264.0);
+  --blue-7:   oklch(0.43 0.35 264.0);
+  --blue-8:   oklch(28.4% 0.165 264.0);
+  --blue-9:   oklch(19.7% 0.114 264.0);
+  --blue-10:  oklch(11.0% 0.064 264.0);
+}
+
+@theme {
+  /* --- 2. SEMANTIC : role-based tokens -------------------------------------
+     Each role points at a step on the ramp above. Tuned for high contrast:
+     a near-white ground, near-black text, and blue-7 carrying every accent. */
+
+  /* Surfaces — page is lightest, panels step down as they come forward */
+  --color-background:      var(--blue-0);    /* app / page background */
+  --color-surface:         var(--blue-0\.5); /* panels, cards, inputs */
+  --color-surface-hover:   var(--blue-1);    /* hovered surface */
+
+  /* Text — ratios measured against --color-background */
+  --color-content:           var(--blue-7); /* primary text        19.4:1 AAA */
+  --color-content-secondary: var(--blue-7);  /* secondary text      14.3:1 AAA */
+  --color-content-muted:     var(--blue-4);  /* muted / placeholder  6.9:1 AA  */
+  --color-content-inverted:  var(--blue-0);  /* text on dark / accent surfaces */
+
+  /* Lines — kept at/above the 3:1 WCAG asks of UI boundaries */
+  --color-border:        var(--blue-1); /* borders & dividers    3.3:1 */
+  --color-border-strong: var(--blue-7); /* hover / focus borders 4.7:1 */
+
+  /* Accent (primary action, selected state) */
+  --color-accent:        var(--blue-7);
+  --color-accent-hover:  var(--blue-8);
+  --color-on-accent:     var(--blue-0); /* text / icons on an accent fill */
+
+  /* Links */
+  --color-link:       var(--blue-7); /* hyperlinks (e.g. Google Fonts link) */
+  --color-link-hover: var(--blue-9);
+
+  /* Status — outside the blue ramp; these have to stay red/green to read */
+  --color-danger:  oklch(45.0% 0.170 27.0);
+  --color-success: oklch(75.0% 0.220 80.0);
+}
+
 html, body, #root {
   height: 100%;
 }

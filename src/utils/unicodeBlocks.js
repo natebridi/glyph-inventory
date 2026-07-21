@@ -25,6 +25,9 @@ const BLOCKS = [
   { name: 'Tibetan', start: 0x0F00, end: 0x0FFF },
   { name: 'Georgian', start: 0x10A0, end: 0x10FF },
   { name: 'Hangul Jamo', start: 0x1100, end: 0x11FF },
+  { name: 'Phonetic Extensions', start: 0x1D00, end: 0x1D7F },
+  { name: 'Phonetic Extensions Supplement', start: 0x1D80, end: 0x1DBF },
+  { name: 'Combining Diacritics Supplement', start: 0x1DC0, end: 0x1DFF },
   { name: 'Latin Extended Additional', start: 0x1E00, end: 0x1EFF },
   { name: 'Greek Extended', start: 0x1F00, end: 0x1FFF },
   { name: 'General Punctuation', start: 0x2000, end: 0x206F },
@@ -42,9 +45,15 @@ const BLOCKS = [
   { name: 'Geometric Shapes', start: 0x25A0, end: 0x25FF },
   { name: 'Miscellaneous Symbols', start: 0x2600, end: 0x26FF },
   { name: 'Dingbats', start: 0x2700, end: 0x27BF },
+  { name: 'Miscellaneous Mathematical Symbols-A', start: 0x27C0, end: 0x27EF },
   { name: 'Supplemental Arrows', start: 0x27F0, end: 0x27FF },
+  { name: 'Supplemental Arrows-B', start: 0x2900, end: 0x297F },
+  { name: 'Miscellaneous Mathematical Symbols-B', start: 0x2980, end: 0x29FF },
   { name: 'Braille Patterns', start: 0x2800, end: 0x28FF },
   { name: 'Supplemental Mathematical', start: 0x2A00, end: 0x2AFF },
+  { name: 'Glagolitic', start: 0x2C00, end: 0x2C5F },
+  { name: 'Latin Extended-C', start: 0x2C60, end: 0x2C7F },
+  { name: 'Coptic', start: 0x2C80, end: 0x2CFF },
   { name: 'CJK Symbols & Punctuation', start: 0x3000, end: 0x303F },
   { name: 'Hiragana', start: 0x3040, end: 0x309F },
   { name: 'Katakana', start: 0x30A0, end: 0x30FF },
@@ -54,6 +63,9 @@ const BLOCKS = [
   { name: 'CJK Compatibility', start: 0x3300, end: 0x33FF },
   { name: 'CJK Unified Ideographs', start: 0x4E00, end: 0x9FFF },
   { name: 'Hangul Syllables', start: 0xAC00, end: 0xD7AF },
+  { name: 'Modifier Tone Letters', start: 0xA700, end: 0xA71F },
+  { name: 'Latin Extended-D', start: 0xA720, end: 0xA7FF },
+  { name: 'Latin Extended-E', start: 0xAB30, end: 0xAB6F },
   { name: 'Private Use Area', start: 0xE000, end: 0xF8FF },
   { name: 'CJK Compatibility Ideographs', start: 0xF900, end: 0xFAFF },
   { name: 'Alphabetic Presentation Forms', start: 0xFB00, end: 0xFB4F },
@@ -102,7 +114,22 @@ const LATIN1_OVERRIDES = new Map([
   [0x00F7, 'Mathematical Operators'],    // ÷
 ])
 
+// Catch-all for codepoints that fall outside every range above. Without it a
+// glyph in no known block bypasses the category filter entirely, because
+// hiddenBlocks is a deny-list and there is no name to deny.
+export const UNCATEGORIZED_BLOCK = 'Uncategorized'
+
 export const OTHER_SCRIPT_BLOCKS = new Set([
+  UNCATEGORIZED_BLOCK,
+  'Phonetic Extensions',
+  'Phonetic Extensions Supplement',
+  'Combining Diacritics Supplement',
+  'Latin Extended-C',
+  'Latin Extended-D',
+  'Latin Extended-E',
+  'Modifier Tone Letters',
+  'Glagolitic',
+  'Coptic',
   'Greek & Coptic',
   'Greek Extended',
   'Latin Extended-A',
@@ -153,15 +180,40 @@ export function getBlock(codepoint) {
   return BLOCKS.find(b => codepoint >= b.start && codepoint <= b.end) ?? null
 }
 
-export function getAvailableBlocks(glyphs) {
+// The block name a glyph filters under. Every glyph with a codepoint resolves to
+// exactly one name, so the counts always add up to the number of glyphs shown.
+export function getBlockName(codepoint) {
+  return getBlock(codepoint)?.name ?? UNCATEGORIZED_BLOCK
+}
+
+function countBlocks(glyphs) {
   const counts = new Map()
   for (const g of glyphs) {
     if (g.unicode == null) continue
-    const block = getBlock(g.unicode)
-    if (!block) continue
-    counts.set(block.name, (counts.get(block.name) ?? 0) + 1)
+    const name = getBlockName(g.unicode)
+    counts.set(name, (counts.get(name) ?? 0) + 1)
   }
-  return BLOCKS
+  return counts
+}
+
+export function getAvailableBlocks(glyphs) {
+  const counts = countBlocks(glyphs)
+  const blocks = BLOCKS
     .filter(b => counts.has(b.name))
     .map(b => ({ ...b, count: counts.get(b.name) }))
+  if (counts.has(UNCATEGORIZED_BLOCK)) {
+    blocks.push({ name: UNCATEGORIZED_BLOCK, count: counts.get(UNCATEGORIZED_BLOCK) })
+  }
+  return blocks
+}
+
+// Every block, with count 0 for blocks absent in this font, so the filter UI
+// can show all categories and disable the ones that aren't present.
+export function getAllBlocksWithCounts(glyphs) {
+  const counts = countBlocks(glyphs)
+  const blocks = BLOCKS.map(b => ({ ...b, count: counts.get(b.name) ?? 0 }))
+  if (counts.has(UNCATEGORIZED_BLOCK)) {
+    blocks.push({ name: UNCATEGORIZED_BLOCK, count: counts.get(UNCATEGORIZED_BLOCK) })
+  }
+  return blocks
 }
