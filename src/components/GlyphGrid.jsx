@@ -3,12 +3,15 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useFont } from '../hooks/useFont'
 import { useGlyphFilter } from '../hooks/useGlyphFilter'
 import GlyphCell from './GlyphCell'
-import GlyphDetail from './GlyphDetail'
+import GlyphDetail, { DETAIL_ANIM_MS } from './GlyphDetail'
 import GlyphFilter from './GlyphFilter'
 import CheckboxRow from './CheckboxRow'
 
 const CELL_SIZE = 88
 const GAP = 0
+// Starting guess for the inline detail row; it is measured for real once open,
+// so this only needs to be close enough to avoid a large scroll correction.
+const DETAIL_ESTIMATE = 260
 const SAMPLE_SENTENCES = [
   'Sphinx of black quartz, judge my vow.',
   'Pack my box with five dozen liquor jugs.',
@@ -32,14 +35,14 @@ function buildVariant(weight, italic) {
   return italic ? `${weight}italic` : weight
 }
 
-const SamplePreview = memo(function SamplePreview({ fontFamily, reserved }) {
+const SamplePreview = memo(function SamplePreview({ fontFamily }) {
   const [sampleSize, setSampleSize] = useState(32)
   const [sampleSentence] = useState(
     () => SAMPLE_SENTENCES[Math.floor(Math.random() * SAMPLE_SENTENCES.length)]
   )
 
   return (
-    <div className="mb-10" style={{ width: `calc(100% - ${reserved}px)` }}>
+    <div className="mb-10">
       <div className="flex items-center gap-3 mb-2">
         <div className="w-4 text-accent">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M133 107L21 405L73 405L100 329L220 329L247 405L299 405L187 107L133 107M205 286L115 286L159 162L161 162L205 286M320 235L491 235L491 277L320 277" fill="currentColor" /></svg>
@@ -112,6 +115,41 @@ export default function GlyphGrid({ fontItem }) {
   const [weight, setWeight] = useState('400')
   const [italic, setItalic] = useState(false)
   const [selectedGlyph, setSelectedGlyph] = useState(null)
+  // `selectedGlyph` controls whether the row exists; `detailOpen` drives the
+  // transition. On close we flip detailOpen first and unmount after the
+  // animation, so the collapse is animated rather than a hard cut.
+  const [detailOpen, setDetailOpen] = useState(false)
+  const closeTimer = useRef(null)
+
+  useEffect(() => () => clearTimeout(closeTimer.current), [])
+
+  // Mount at 0fr, then open on the next frame so the browser has a start value
+  // to transition from.
+  useEffect(() => {
+    if (!selectedGlyph) return
+    const id = requestAnimationFrame(() => setDetailOpen(true))
+    return () => cancelAnimationFrame(id)
+  }, [selectedGlyph])
+
+  function closeDetail() {
+    setDetailOpen(false)
+    clearTimeout(closeTimer.current)
+    closeTimer.current = setTimeout(() => {
+      setSelectedGlyph(null)
+      // Drop the cached open height so reopening starts from collapsed again
+      // rather than flashing to full size for a frame.
+      rowVirtualizer.measure()
+    }, DETAIL_ANIM_MS)
+  }
+
+  function handleGlyphClick(glyph) {
+    clearTimeout(closeTimer.current)
+    if (selectedGlyph?.index === glyph.index) {
+      closeDetail()
+    } else {
+      setSelectedGlyph(glyph)
+    }
+  }
 
   const variant = buildVariant(weight, italic)
   const resolvedVariant = fontItem.files?.[variant] ? variant : Object.keys(fontItem.files ?? {})[0]
@@ -141,10 +179,12 @@ export default function GlyphGrid({ fontItem }) {
     setWeight(defaultWeight)
     setItalic(false)
     setSelectedGlyph(null)
+    setDetailOpen(false)
   }, [fontItem])
 
   useEffect(() => {
     setSelectedGlyph(null)
+    setDetailOpen(false)
   }, [variant])
 
   function handleWeightChange(w) {
@@ -155,36 +195,50 @@ export default function GlyphGrid({ fontItem }) {
     }
   }
 
-  const panelWidth = 320
-  // Only reserve space for the detail panel when it's actually open, so glyphs
-  // fill the full width the rest of the time.
-  const reserved = selectedGlyph ? panelWidth : 0
-  const effectiveWidth = containerWidth - reserved
-  const columnCount = Math.max(1, Math.floor((effectiveWidth + GAP) / (CELL_SIZE + GAP)))
+  const columnCount = Math.max(1, Math.floor((containerWidth + GAP) / (CELL_SIZE + GAP)))
 
   const rows = []
   for (let i = 0; i < filter.filteredGlyphs.length; i += columnCount) {
     rows.push(filter.filteredGlyphs.slice(i, i + columnCount))
   }
 
+  // The detail is a real row in the list, slotted straight after the row holding
+  // the selected glyph, so the grid opens up instead of being overlaid.
+  const items = []
+  for (const glyphs of rows) {
+    items.push({ kind: 'row', glyphs })
+    if (selectedGlyph && glyphs.some(g => g.index === selectedGlyph.index)) {
+      items.push({ kind: 'detail', glyph: selectedGlyph })
+    }
+  }
+
   const rowVirtualizer = useVirtualizer({
-    count: rows.length,
+    count: items.length,
     getScrollElement: () => containerRef.current,
-    estimateSize: () => CELL_SIZE + GAP,
+    estimateSize: (i) => (items[i]?.kind === 'detail' ? DETAIL_ESTIMATE : CELL_SIZE + GAP),
+    // Keys stay stable as the detail row is inserted and removed, so cached
+    // measurements don't get attributed to the wrong row.
+    getItemKey: (i) => {
+      const item = items[i]
+      if (!item) return i
+      return item.kind === 'detail'
+        ? `detail-${item.glyph.index}`
+        : `row-${item.glyphs[0].index}`
+    },
     overscan: 5,
     // Buffer so a scrolled-to glyph isn't flush against the viewport edge.
     scrollPaddingStart: 48,
     scrollPaddingEnd: 48,
   })
 
-  // Keep the selected glyph on screen: opening the detail panel reflows the grid
-  // (fewer columns), which can move the selected cell out of view.
+  // Keep the selected glyph on screen — the inserted row can push it out of view.
   useEffect(() => {
     if (!selectedGlyph) return
-    const pos = filter.filteredGlyphs.findIndex(g => g.index === selectedGlyph.index)
+    const pos = items.findIndex(
+      it => it.kind === 'row' && it.glyphs.some(g => g.index === selectedGlyph.index)
+    )
     if (pos < 0) return
-    const rowIndex = Math.floor(pos / columnCount)
-    rowVirtualizer.scrollToIndex(rowIndex, { align: 'auto', behavior: 'smooth' })
+    rowVirtualizer.scrollToIndex(pos, { align: 'auto', behavior: 'smooth' })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGlyph, columnCount])
 
@@ -256,7 +310,7 @@ export default function GlyphGrid({ fontItem }) {
         {!loading && !error && glyphs.length > 0 && (
           <>
             <div ref={containerRef} className="flex-1 min-h-0 overflow-auto p-6">
-              <SamplePreview key={resetKey} fontFamily={fontFamily} reserved={reserved} />
+              <SamplePreview key={resetKey} fontFamily={fontFamily} />
 
               {filter.filteredGlyphs.length === 0 ? (
                 <div className="flex min-h-32 items-center justify-center text-content-muted text-sm">
@@ -273,48 +327,64 @@ export default function GlyphGrid({ fontItem }) {
                     width: columnCount * CELL_SIZE + 1,
                   }}
                 >
-                  {rowVirtualizer.getVirtualItems().map((virtualRow) => (
-                    <div
-                      key={virtualRow.index}
-                      style={{
-                        position: 'absolute',
-                        top: virtualRow.start,
-                        left: 0,
-                        right: 0,
-                        height: CELL_SIZE,
-                        display: 'grid',
-                        gridTemplateColumns: `repeat(${columnCount}, ${CELL_SIZE}px)`,
-                        gap: GAP,
-                      }}
-                    >
-                      {rows[virtualRow.index].map((glyph) => (
-                        <GlyphCell
-                          key={glyph.index}
-                          glyph={glyph}
-                          fontFamily={fontFamily}
-                          font={parsedFont}
-                          isSelected={selectedGlyph?.index === glyph.index}
-                          onClick={() =>
-                            setSelectedGlyph((prev) =>
-                              prev?.index === glyph.index ? null : glyph
-                            )
-                          }
-                        />
-                      ))}
-                    </div>
-                  ))}
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const item = items[virtualRow.index]
+                    if (!item) return null
+
+                    if (item.kind === 'detail') {
+                      return (
+                        <div
+                          key={virtualRow.key}
+                          data-index={virtualRow.index}
+                          ref={rowVirtualizer.measureElement}
+                          style={{
+                            position: 'absolute',
+                            top: virtualRow.start,
+                            left: 0,
+                            right: 0,
+                          }}
+                        >
+                          <GlyphDetail
+                            glyph={item.glyph}
+                            fontFamily={fontFamily}
+                            font={parsedFont}
+                            open={detailOpen}
+                            onClose={closeDetail}
+                          />
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div
+                        key={virtualRow.key}
+                        style={{
+                          position: 'absolute',
+                          top: virtualRow.start,
+                          left: 0,
+                          right: 0,
+                          height: CELL_SIZE,
+                          display: 'grid',
+                          gridTemplateColumns: `repeat(${columnCount}, ${CELL_SIZE}px)`,
+                          gap: GAP,
+                        }}
+                      >
+                        {item.glyphs.map((glyph) => (
+                          <GlyphCell
+                            key={glyph.index}
+                            glyph={glyph}
+                            fontFamily={fontFamily}
+                            font={parsedFont}
+                            isSelected={selectedGlyph?.index === glyph.index}
+                            onClick={() => handleGlyphClick(glyph)}
+                          />
+                        ))}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
-
-            {selectedGlyph && (
-              <GlyphDetail
-                glyph={selectedGlyph}
-                fontFamily={fontFamily}
-                font={parsedFont}
-                onClose={() => setSelectedGlyph(null)}
-              />
-            )}
           </>
         )}
       </div>

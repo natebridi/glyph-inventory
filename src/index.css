@@ -70,7 +70,7 @@
 
   /* Status — outside the blue ramp; these have to stay red/green to read */
   --color-danger:  oklch(45.0% 0.170 27.0);
-  --color-success: oklch(45.0% 0.120 150.0);
+  --color-success: oklch(75.0% 0.220 80.0);
 }
 
 html, body, #root {
